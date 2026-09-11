@@ -1,43 +1,49 @@
 # 🛡️ Telegram Supergroup Moderation & Warden Bot
 
-A production-ready Telegram Supergroup moderation bot featuring **Emoji CAPTCHA** gatekeeping, a community-driven **Bailout (`/bail`)** mechanic, anti-spam link filtering, SQLite persistence, and a daily **23:59 UTC "Midnight Prison Break"** unfreeze ritual.
+A battle-tested Telegram Supergroup moderation bot featuring **Emoji CAPTCHA** gatekeeping, **Anti-Raid Lockdown**, an **Anonymous Channel Shield**, a community-driven **Bailout (`/bail`)** mechanic, **Timed Mutes**, **Admin Caching**, SQLite persistence, and a daily **23:59 UTC "Midnight Prison Break & Crime Report"**.
 
 ---
 
-## ✨ Features
+## ✨ Features & Capabilities
 
 - **🧩 Dynamic Emoji CAPTCHA:**
-  - Upon joining, new members are restricted and presented with 4 randomized emoji buttons (e.g. *"Click the 🐶 Dog to prove you are human"*).
-  - Protects against automated headless click-bots that easily bypass static "I am Human" buttons.
-  - Automatically cancels the kick timer upon success and cleans up verification messages after 5 seconds.
-  - Soft-kicks (ban + unban) users who fail or timeout after 90 seconds.
+  - Mutes new members immediately and challenges them to find a randomized target emoji (e.g. *"Click the 🐶 Dog to unlock chat access"*).
+  - Outsmarts headless browser click-bots that target generic "I am Human" buttons.
+  - Automatically cancels the kick timer on success and removes verification prompts after 5 seconds.
+  - Soft-kicks users who fail or timeout after 90 seconds.
+
+- **🚨 Anti-Raid Panic Mode:**
+  - Detects join velocity surges (e.g., >5 joins in 10 seconds).
+  - Automatically locks down the gates for 5 minutes, auto-kicking raid accounts without sending CAPTCHAs into the chat.
+
+- **🎭 Anonymous Channel Impersonation Shield:**
+  - Prevents scammers from sending messages on behalf of public Telegram channels (often used to evade user bans and promote crypto drainers).
+  - Automatically deletes posts from external channels while whitelisting the group itself and official linked channels.
 
 - **🤝 Community Bailout System (`/bail`):**
-  - Jailed users receive an interactive `[🤝 Post Bail (0/3)]` button.
-  - Active group members can vouch for the prisoner. Once the threshold is met, the inmate is released early!
+  - Incarcerated users receive an interactive `[🤝 Post Bail (0/3)]` button.
+  - Active group members can vouch for them. Once 3 vouches are collected, the prisoner is released early!
   - Inmates cannot bail themselves or other inmates.
 
-- **🛡️ HTML Injection & Character Escaping:**
-  - Full HTML escaping prevents crashes from markdown injection or special characters in user names (`_`, `*`, `[`, `]`).
+- **⏳ Timed Mutes (`/mute` & `/unmute`):**
+  - Allows quick, temporary timeouts (e.g. `/mute 15m`, `/mute 2h`, `/mute 1d`) without full midnight sentencing.
+  - Automatically restores permissions when the timer expires.
 
-- **🔒 Group-Respecting Permissions:**
-  - When unmuting or bailing out members, the bot inherits the group's default `chat.permissions` rather than applying arbitrary elevated privileges.
+- **⚡ In-Memory Admin Caching (429 Rate-Limit Prevention):**
+  - Caches administrator IDs with a 5-minute TTL to prevent Telegram API flood limits during high chat activity.
 
-- **🧹 Anti-Spam Link Interceptor:**
-  - Automatically deletes unauthorized invite links (`t.me/`, `telegram.me/`) and shorteners (`bit.ly/`, `tinyurl.com/`, `is.gd/`) from non-admin members.
-  - Leaves a temporary 5-second auto-deleting warning.
+- **🛡️ Unicode & Zero-Width Anti-Spam Filter:**
+  - Normalizes homoglyphs (NFKD) and strips hidden zero-width spaces (`\u200b`, `\ufeff`) before inspecting links (`t.me/`, `telegram.me/`, `bit.ly/`, `tinyurl.com/`, etc.).
 
-- **🔓 The Midnight Prison Break Ritual (23:59 UTC):**
-  - Nightly automated cron job pardons all inmates with humorous warden quotes.
-  - Mentions are dispatched in chunks with rate-limit throttles (150ms) to prevent Telegram API 429 errors.
+- **📊 Warden's Daily Crime Report (23:59 UTC):**
+  - Releases all remaining prisoners at midnight with humorous quotes and broadcasts daily moderation statistics:
+    - *Inmates Pardoned*
+    - *Spam Links Intercepted*
+    - *Bails Granted*
+    - *Raid Incursions Deflected*
 
-- **⚡ Complete Admin Quality-of-Life Suite:**
-  - `/warn` (reply): Issues warning; automatically jails on 3 strikes.
-  - `/jail` (reply): Immediately jails a user until midnight or community bail.
-  - `/pardon` (reply or `ID`): Manually releases an inmate immediately.
-  - `/status` (reply, `ID`, or self): Checks warning count and prison status.
-  - `/clearwarns` (reply or `ID`): Resets warnings to 0.
-  - `/unfreezeall` / `/unmuteall`: Emergency manual release of all inmates.
+- **📋 Dedicated Admin Audit Log Channel (Optional):**
+  - Automatically dispatches moderation audit logs (warnings, jailing, pardons, raid triggers, link blocks) to a private channel.
 
 ---
 
@@ -45,21 +51,20 @@ A production-ready Telegram Supergroup moderation bot featuring **Emoji CAPTCHA*
 
 ### 1. Create the Bot with @BotFather
 1. Open Telegram and search for [`@BotFather`](https://t.me/BotFather).
-2. Send `/newbot`, name your bot, and pick a username ending in `bot`.
-3. Save the **HTTP API Token**.
-4. Send `/setprivacy` to `@BotFather`, select your bot, and set it to **Disable**. *(This is required for the bot to monitor chat messages for link spam).*
+2. Send `/newbot`, choose a display name and a username ending in `bot`.
+3. Copy your **HTTP API Token**.
+4. Send `/setprivacy`, select your bot, and choose **Disable**. *(Allows the bot to monitor chat messages for link spam).*
 
-### 2. Prepare Your Telegram Group
-1. Convert your group to a **Supergroup** (groups with chat history visible to new members or with >200 members are automatically Supergroups).
-2. Add your bot to the group.
-3. Promote the bot to **Administrator** with the following permissions:
+### 2. Group Configuration
+1. Ensure your group is a **Supergroup** (groups with chat history visible to new members or with >200 members are automatically Supergroups).
+2. Add the bot to the group and promote it to **Administrator** with:
    - ✅ *Delete messages*
    - ✅ *Ban users* (Restrict members)
    - ✅ *Invite users via link*
 
 ### 3. Retrieve Your Numeric Group ID
-- Forward any message from your Supergroup to [`@JsonDumpBot`](https://t.me/JsonDumpBot) or [`@userinfobot`](https://t.me/userinfobot).
-- The ID begins with `-100` (e.g. `-1001234567890`).
+- Forward any message from your group to [`@JsonDumpBot`](https://t.me/JsonDumpBot) or [`@userinfobot`](https://t.me/userinfobot).
+- Look for `chat.id` (starts with `-100`, e.g. `-1001234567890`).
 
 ---
 
@@ -73,55 +78,33 @@ A production-ready Telegram Supergroup moderation bot featuring **Emoji CAPTCHA*
    cd charming-lovelace
    ```
 
-2. **Create a virtual environment:**
+2. **Create a virtual environment & install dependencies:**
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
    pip install -r requirements.txt
    ```
 
-4. **Configure environment:**
+3. **Configure environment:**
    ```bash
    cp .env.example .env
    ```
-   Edit `.env` and configure your credentials:
+   Edit `.env`:
    ```env
    TELEGRAM_BOT_TOKEN=1234567890:ABCDefGhIJkLmNoPQRstUVwxyZ
    TARGET_GROUP_ID=-1001234567890
+   LOG_CHANNEL_ID=-1009876543210
    BAIL_THRESHOLD=3
    CAPTCHA_TIMEOUT=90
+   RAID_THRESHOLD=5
+   RAID_WINDOW=10
+   LOCKDOWN_DURATION=300
    ```
 
-5. **Start the bot:**
+4. **Run the bot:**
    ```bash
    python main.py
    ```
-
----
-
-## 🌐 24/7 Free Cloud Hosting (Render / Koyeb)
-
-1. Push your repository to GitHub (ensure `.env` and `*.db` are ignored).
-2. On [Render](https://render.com) or [Koyeb](https://koyeb.com), create a **Background Worker** (or **Web Service**).
-3. Set **Build Command**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Set **Start Command**:
-   ```bash
-   python main.py
-   ```
-5. In the **Environment Variables** dashboard, add:
-   - `TELEGRAM_BOT_TOKEN`: *your bot token*
-   - `TARGET_GROUP_ID`: *your numeric supergroup ID*
-   - `BAIL_THRESHOLD`: `3`
-
-> [!TIP]
-> Render free containers use ephemeral filesystems. For zero-maintenance persistence on cloud containers, attach a persistent disk volume or configure an external database like **Turso** (`libsql`).
 
 ---
 
@@ -129,19 +112,24 @@ A production-ready Telegram Supergroup moderation bot featuring **Emoji CAPTCHA*
 
 | Command | Target | Permission | Description |
 | :--- | :--- | :--- | :--- |
-| `/warn` | Reply | Admin | Issues a warning. Strikes 3/3 triggers jail. |
-| `/jail` | Reply | Admin | Jails user until midnight or bail. |
-| `/pardon` | Reply / ID | Admin | Immediately releases a jailed inmate. |
-| `/clearwarns` | Reply / ID | Admin | Clears warning counter back to 0/3. |
-| `/status` | Reply / ID / Self | Everyone | Checks criminal record and warnings. |
-| `/unfreezeall` | None | Admin | Triggers an immediate mass release. |
+| `/warn [reason]` | Reply | Admin | Issues a warning strike. Jails on 3 strikes. |
+| `/jail [reason]` | Reply | Admin | Jails user until 23:59 UTC or community bail. |
+| `/mute [15m/2h/1d]`| Reply | Admin | Applies a temporary timed mute. |
+| `/unmute` | Reply / ID | Admin | Lifts a mute immediately. |
+| `/pardon` | Reply / ID | Admin | Pardons and releases an incarcerated inmate. |
+| `/clearwarns` | Reply / ID | Admin | Resets strike count back to 0/3. |
+| `/unfreezeall` | None | Admin | Triggers an immediate mass prison break. |
+| `/status` | Reply / ID / Self | Everyone | Checks warnings and incarceration status. |
+| `/rules` | None | Everyone | Displays group safety rules. |
+| `/help` | None | Everyone | Displays command guide. |
 
 ---
 
-## 🗄️ Database Architecture
+## 🗄️ Database Schema
 
-SQLite file: `group_moderator.db`
+SQLite database: `group_moderator.db`
 
-- **`jail`**: Records incarcerated users (`user_id`, `chat_id`, `first_name`, `username`, `status`, `reason`, `jailed_at`).
-- **`warnings`**: Tracks warnings per user (`user_id`, `chat_id`, `warn_count`, `updated_at`).
-- **`bail`**: Tracks community vouches (`prisoner_id`, `chat_id`, `voucher_id`, `created_at`) with unique constraints preventing duplicate votes.
+- **`jail`**: Incarcerated members, status (`jailed`, `released`, `bailed`, `pardoned`), reason, timestamp.
+- **`warnings`**: Tracks warning counters per user.
+- **`bail`**: Tracks community vouches with unique `(prisoner_id, voucher_id)` constraints.
+- **`daily_stats`**: Tracks daily metrics (`links_blocked`, `users_jailed`, `bails_granted`, `raids_blocked`).
