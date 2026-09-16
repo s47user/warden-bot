@@ -40,3 +40,13 @@ env/
 .idea/
 *.swp
 *.swo
+
+# Documentation guides & non-public docs
+HOSTING.md
+
+# AI tools, agent configs, & internal logs
+.gemini/
+.system_generated/
+*.log
+scratch/
+brain/
