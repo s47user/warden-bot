@@ -2089,16 +2089,15 @@ async def global_error_handler(update: object, context: ContextTypes.DEFAULT_TYP
     logger.error("Unhandled exception processing update '%s': %s", update, context.error, exc_info=context.error)
 
 async def post_init_hook(application) -> None:
-    """Startup hook executed after application and job queue are fully initialized."""
+    """Startup hook executed inside the application event loop before polling starts."""
     logger.info("Running post_init startup sequence...")
+    await init_db()
     await restore_pending_timed_mutes(application)
 
 def main():
     if not BOT_TOKEN:
         logger.critical("TELEGRAM_BOT_TOKEN environment variable is not set! Please check your .env file.")
         return
-
-    asyncio.run(init_db())
 
     rate_limiter = ProductionRateLimiter(
         overall_max_rate=25.0,
