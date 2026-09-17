@@ -246,6 +246,10 @@ SPAM_PATTERNS = [
 
 async def init_db():
     """Initializes the SQLite database with multi-tenant tables, settings, indexes, and WAL concurrency mode."""
+    db_dir = os.path.dirname(DB_FILE)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
+
     async with db_connect() as db:
         # SQLite Concurrency & Durability Hardening
         await db.execute("PRAGMA journal_mode=WAL;")

@@ -27,6 +27,4 @@ COPY --chown=appuser:appuser main.py .
 
 USER appuser
 
-VOLUME ["/app/data"]
-
 CMD ["python", "main.py"]
