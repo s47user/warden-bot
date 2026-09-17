@@ -145,10 +145,23 @@ async def main():
         api_id = int(api_id_env)
         api_hash = str(api_hash_env)
         bot_token = str(bot_token_env)
-        chat_id = int(chat_id_env)
     except ValueError:
-        print("\n❌ Invalid credentials entered. API_ID and CHAT_ID must be numbers.")
+        print("\n❌ Invalid credentials entered. API_ID must be a number.")
         sys.exit(1)
+
+    raw_chat = str(chat_id_env).strip()
+    if raw_chat.startswith("@"):
+        chat_target = raw_chat
+    elif raw_chat.lstrip("-").isdigit():
+        num = int(raw_chat)
+        if num > 0:
+            chat_target = int(f"-100{num}")
+        elif not str(num).startswith("-100"):
+            chat_target = int(f"-100{abs(num)}")
+        else:
+            chat_target = num
+    else:
+        chat_target = raw_chat
 
     bot_api = f"https://api.telegram.org/bot{bot_token}"
 
@@ -158,10 +171,13 @@ async def main():
     members = []
     async with Client("warden_unmute_session", api_id=api_id, api_hash=api_hash, sleep_threshold=60) as app:
         try:
-            chat = await app.get_chat(chat_id)
+            chat = await app.get_chat(chat_target)
+            chat_id = chat.id
             print(f"[*] Successfully connected to chat: '{chat.title}' (ID: {chat_id})")
         except Exception as e:
-            print(f"❌ Failed to access chat {chat_id}: {e}")
+            print(f"❌ Failed to access chat '{chat_target}': {e}")
+            print("💡 Tip: Make sure your Telegram user account is a member (or admin) of the group.")
+            print("💡 Tip: Supergroup IDs always start with -100 (e.g. -1001794534648).")
             sys.exit(1)
 
         print("[*] Querying restricted members list...")
