@@ -1146,7 +1146,7 @@ async def timed_unmute_callback(context: ContextTypes.DEFAULT_TYPE):
         logger.error("Error executing timed_unmute_callback for user %s in chat %s: %s", user_id, chat_id, e)
 
 async def unmute_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Admin command to manually unmute a member."""
+    """Admin command to manually unmute one or multiple members."""
     if not await is_admin(update, context, update.effective_user.id):
         return
 
@@ -1160,38 +1160,63 @@ async def unmute_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    target_user = None
+    targets = []
     if update.message.reply_to_message:
-        target_user = update.message.reply_to_message.from_user
+        targets.append(update.message.reply_to_message.from_user)
     elif context.args:
-        try:
-            user_id = int(context.args[0])
-            member = await context.bot.get_chat_member(chat_id, user_id)
-            target_user = member.user
-        except Exception:
-            await update.message.reply_text("❌ User not found.")
-            return
-
-    if not target_user:
-        await update.message.reply_text("ℹ️ Reply to a user or pass their user ID: <code>/unmute 123456</code>", parse_mode=ParseMode.HTML)
+        for arg in context.args:
+            clean_arg = arg.strip().lstrip("@")
+            try:
+                uid = int(clean_arg)
+                member = await context.bot.get_chat_member(chat_id, uid)
+                targets.append(member.user)
+            except Exception:
+                pass
+    else:
+        await update.message.reply_text(
+            "ℹ️ <b>How to unmute members:</b>\n\n"
+            "• Reply to any message from the user with <code>/unmute</code>\n"
+            "• Or pass one or more Telegram numeric IDs:\n"
+            "  <code>/unmute 123456789</code>\n"
+            "  <code>/unmute 123456 987654 112233</code>",
+            parse_mode=ParseMode.HTML
+        )
         return
 
-    # Cancel pending timed mute job
-    for job in context.job_queue.get_jobs_by_name(f"timed_mute_{chat_id}_{target_user.id}"):
-        job.schedule_removal()
+    if not targets:
+        await update.message.reply_text("❌ No valid members found. Please check the user IDs.")
+        return
 
-    # Clear from SQLite persistence
-    try:
-        async with db_connect() as db:
-            await db.execute("DELETE FROM timed_mutes WHERE chat_id = ? AND user_id = ?", (chat_id, target_user.id))
-            await db.commit()
-    except Exception as e:
-        logger.error("Failed to remove timed mute record for %s: %s", target_user.id, e)
+    unmuted_mentions = []
+    for target_user in targets:
+        # Cancel pending timed mute job
+        for job in context.job_queue.get_jobs_by_name(f"timed_mute_{chat_id}_{target_user.id}"):
+            job.schedule_removal()
 
-    await restore_user_permissions(context.bot, chat_id, target_user.id)
-    mention = user_mention(target_user.id, target_user.first_name, target_user.username)
-    await update.message.reply_text(f"🔊 {mention} has been unmuted.", parse_mode=ParseMode.HTML)
-    await send_audit_log(context, f"🔊 <b>Unmuted:</b> {mention} by admin <code>{update.effective_user.id}</code>.", chat_id=chat_id)
+        # Clear from SQLite persistence
+        try:
+            async with db_connect() as db:
+                await db.execute("DELETE FROM timed_mutes WHERE chat_id = ? AND user_id = ?", (chat_id, target_user.id))
+                await db.execute("UPDATE jail SET status = 'released' WHERE chat_id = ? AND user_id = ? AND status = 'jailed'", (chat_id, target_user.id))
+                await db.commit()
+        except Exception as e:
+            logger.error("Failed to remove timed mute record for %s: %s", target_user.id, e)
+
+        await restore_user_permissions(context.bot, chat_id, target_user.id)
+        unmuted_mentions.append(user_mention(target_user.id, target_user.first_name, target_user.username))
+
+    if len(unmuted_mentions) == 1:
+        await update.message.reply_text(f"🔊 {unmuted_mentions[0]} has been unmuted.", parse_mode=ParseMode.HTML)
+    else:
+        await update.message.reply_text(
+            f"🔊 <b>Unmuted {len(unmuted_mentions)} members:</b>\n" + ", ".join(unmuted_mentions),
+            parse_mode=ParseMode.HTML
+        )
+    await send_audit_log(
+        context,
+        f"🔊 <b>Unmuted ({len(unmuted_mentions)} user(s)):</b> {', '.join(unmuted_mentions)} by admin <code>{update.effective_user.id}</code>.",
+        chat_id=chat_id
+    )
 
 async def restore_pending_timed_mutes(application):
     """Restores pending timed mutes from SQLite on application startup."""
