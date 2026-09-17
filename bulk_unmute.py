@@ -17,7 +17,7 @@ try:
     from pyrogram.enums import ChatMembersFilter
 except ImportError:
     print("\n❌ Pyrogram is required for this tool.")
-    print("Run: pip install pyrogram tgcrypto httpx python-dotenv\n")
+    print("Run: pip install --user pyrogram httpx python-dotenv --break-system-packages\n")
     sys.exit(1)
 
 load_dotenv()
