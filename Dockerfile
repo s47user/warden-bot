@@ -17,14 +17,10 @@ RUN apt-get update && \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create non-root user and persistent data directory
-RUN useradd -u 1000 -m -s /bin/bash appuser && \
-    mkdir -p /app/data && \
-    chown -R appuser:appuser /app
+# Ensure persistent data directory exists
+RUN mkdir -p /app/data
 
 # Copy application source
-COPY --chown=appuser:appuser main.py .
-
-USER appuser
+COPY main.py .
 
 CMD ["python", "main.py"]

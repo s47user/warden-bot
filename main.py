@@ -248,7 +248,12 @@ async def init_db():
     """Initializes the SQLite database with multi-tenant tables, settings, indexes, and WAL concurrency mode."""
     db_dir = os.path.dirname(DB_FILE)
     if db_dir:
-        os.makedirs(db_dir, exist_ok=True)
+        try:
+            os.makedirs(db_dir, exist_ok=True)
+        except Exception as err:
+            logger.error("Failed to create database directory '%s': %s", db_dir, err)
+
+    logger.info("Connecting to database at path: '%s' (absolute: '%s')", DB_FILE, os.path.abspath(DB_FILE))
 
     async with db_connect() as db:
         # SQLite Concurrency & Durability Hardening
