@@ -50,3 +50,7 @@ HOSTING.md
 *.log
 scratch/
 brain/
+
+# Pyrogram / Telethon user sessions
+*.session
+*.session-journal
